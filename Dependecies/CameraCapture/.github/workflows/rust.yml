@@ -1,0 +1,164 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'bindings/rust/**'
+      - 'src/**'
+      - 'include/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/rust.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'bindings/rust/**'
+      - 'src/**'
+      - 'include/**'
+      - 'CMakeLists.txt'
+      - '.github/workflows/rust.yml'
+
+env:
+  CARGO_TERM_COLOR: always
+  CCAP_SKIP_CAMERA_TESTS: 1
+
+permissions:
+  contents: read
+
+jobs:
+  # Job 1: Static Linking (Development Mode)
+  # Verifies that the crate links correctly against a pre-built C++ library.
+  static-link:
+    name: Static Link (Dev)
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install system dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential pkg-config libclang-dev
+
+    - name: Install system dependencies (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install cmake llvm -y
+
+    - name: Configure LIBCLANG_PATH (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: echo "LIBCLANG_PATH=C:\\Program Files\\LLVM\\bin" >> $env:GITHUB_ENV
+
+    - name: Install system dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install cmake llvm
+        echo "LIBCLANG_PATH=$(brew --prefix llvm)/lib" >> $GITHUB_ENV
+
+    - name: Install Rust toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: stable
+        components: clippy, rustfmt
+        cache: false
+
+    # Build C++ Library (Linux/macOS)
+    # We build in build/Debug to match build.rs expectations for Unix Makefiles
+    - name: Build C library (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        mkdir -p build/Debug
+        cd build/Debug
+        cmake -DCMAKE_BUILD_TYPE=Debug -DCCAP_BUILD_EXAMPLES=OFF -DCCAP_BUILD_TESTS=OFF ../..
+        cmake --build . --config Debug --parallel
+
+    # Build C++ Library (Windows)
+    # Build both Debug and Release versions
+    # MSVC is a multi-config generator, so we build to build/ and specify config at build time
+    - name: Build C library (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        mkdir build
+        cd build
+        cmake -DCCAP_BUILD_EXAMPLES=OFF -DCCAP_BUILD_TESTS=OFF ..
+        cmake --build . --config Debug --parallel
+        cmake --build . --config Release --parallel
+
+    - name: Check formatting
+      if: matrix.os == 'ubuntu-latest'
+      working-directory: bindings/rust
+      run: cargo fmt -- --check
+
+    - name: Run clippy
+      if: matrix.os == 'ubuntu-latest'
+      working-directory: bindings/rust
+      run: cargo clippy --all-targets --no-default-features --features static-link -- -D warnings
+
+    - name: Build Rust bindings
+      working-directory: bindings/rust
+      run: cargo build --verbose --no-default-features --features static-link
+
+    - name: Run tests
+      working-directory: bindings/rust
+      run: cargo test --verbose --no-default-features --features static-link
+
+  # Job 2: Source Build (Distribution Mode)
+  # Verifies that the crate builds correctly from source using the cc crate.
+  # This is crucial for crates.io distribution.
+  build-source:
+    name: Build Source (Dist)
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install system dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential pkg-config
+
+    - name: Install system dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: brew install llvm
+
+    - name: Install system dependencies (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install llvm -y
+        refreshenv
+
+    - name: Configure LIBCLANG_PATH (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: echo "LIBCLANG_PATH=C:\\Program Files\\LLVM\\bin" >> $env:GITHUB_ENV
+
+    - name: Configure LIBCLANG_PATH (macOS)
+      if: matrix.os == 'macos-latest'
+      run: echo "LIBCLANG_PATH=$(brew --prefix llvm)/lib" >> $GITHUB_ENV
+
+    - name: Install Rust toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: stable
+        cache: false
+    # The build.rs script should handle it via the 'build-source' feature.
+
+    - name: Build Rust bindings (Source)
+      working-directory: bindings/rust
+      # Disable default features (static-link) and enable build-source
+      run: cargo build --verbose --no-default-features --features build-source
+
+    - name: Run tests (Source)
+      working-directory: bindings/rust
+      run: cargo test --verbose --no-default-features --features build-source

@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/Application.dir/link.d CMakeFiles/Application.dir/C++/main.cpp.o CMakeFiles/Application.dir/Dependecies/glad/src/glad.c.o -o Application  Dependecies/glfw/src/libglfw3.a Dependecies/imgui/libimgui.a Dependecies/CameraCapture/libccap.a -lGL -ldl -lpthread /usr/lib/x86_64-linux-gnu/librt.a -lm -ldl

@@ -1,5 +1,0 @@
-cmake_minimum_required(VERSION 3.10)
-project(MójProjekt)
-
-# Twój główny program
-add_executable(MójProgram C++/main.cpp)

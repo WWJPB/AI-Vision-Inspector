@@ -1,0 +1,1660 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Load Project",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"if (-not (Test-Path 'build')) { New-Item -ItemType Directory -Path 'build' | Out-Null }; Set-Location 'build'; cmake ..\"; else mkdir -p build/Debug && pushd build/Debug && cmake ../.. -DCMAKE_BUILD_TYPE=Debug && popd && mkdir -p build/Release && pushd build/Release && cmake ../.. -DCMAKE_BUILD_TYPE=Release; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "if (-not (Test-Path 'build')) { New-Item -ItemType Directory -Path 'build' | Out-Null }; Set-Location 'build'; cmake .."
+                ],
+                "options": {
+                    "cwd": "${workspaceFolder}"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Load Project (Shared)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"if (-not (Test-Path 'build_shared')) { New-Item -ItemType Directory -Path 'build_shared' | Out-Null }; Set-Location 'build_shared'; cmake .. -DCCAP_BUILD_SHARED=ON\"; else mkdir -p build_shared/Debug && pushd build_shared/Debug && cmake ../.. -DCMAKE_BUILD_TYPE=Debug -DCCAP_BUILD_SHARED=ON && popd && mkdir -p build_shared/Release && pushd build_shared/Release && cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCCAP_BUILD_SHARED=ON; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "if (-not (Test-Path 'build_shared')) { New-Item -ItemType Directory -Path 'build_shared' | Out-Null }; Set-Location 'build_shared'; cmake .. -DCCAP_BUILD_SHARED=ON"
+                ],
+                "options": {
+                    "cwd": "${workspaceFolder}"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Clean Project",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "git clean -fdx build build_shared examples"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "git clean -fdx build; if ($LASTEXITCODE -ne 0 -and (Test-Path 'build')) { Remove-Item -Recurse -Force 'build' }; git clean -fdx build_shared; if ($LASTEXITCODE -ne 0 -and (Test-Path 'build_shared')) { Remove-Item -Recurse -Force 'build_shared' }"
+                ],
+                "options": {
+                    "cwd": "${workspaceFolder}"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Config: Enable CLI Tool",
+            "type": "process",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "if [ ! -f dev.cmake ]; then cp cmake/dev.cmake.example dev.cmake; fi && perl -i -pe 's/^(# )?set\\(CCAP_BUILD_CLI \\w+\\)/set(CCAP_BUILD_CLI ON)/' dev.cmake && echo CCAP_BUILD_CLI=ON"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Config: Disable CLI Tool",
+            "type": "process",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "if [ ! -f dev.cmake ]; then cp cmake/dev.cmake.example dev.cmake; fi && perl -i -pe 's/^(# )?set\\(CCAP_BUILD_CLI \\w+\\)/set(CCAP_BUILD_CLI OFF)/' dev.cmake && echo CCAP_BUILD_CLI=OFF"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Config: Enable CLI Standalone",
+            "type": "process",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "if [ ! -f dev.cmake ]; then cp cmake/dev.cmake.example dev.cmake; fi && perl -i -pe 's/^(# )?set\\(CCAP_BUILD_CLI_STANDALONE \\w+\\)/set(CCAP_BUILD_CLI_STANDALONE ON)/' dev.cmake && echo CCAP_BUILD_CLI_STANDALONE=ON"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Config: Disable CLI Standalone",
+            "type": "process",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "if [ ! -f dev.cmake ]; then cp cmake/dev.cmake.example dev.cmake; fi && perl -i -pe 's/^(# )?set\\(CCAP_BUILD_CLI_STANDALONE \\w+\\)/set(CCAP_BUILD_CLI_STANDALONE OFF)/' dev.cmake && echo CCAP_BUILD_CLI_STANDALONE=OFF"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Config: Setup dev.cmake",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "if [ ! -f dev.cmake ]; then cp cmake/dev.cmake.example dev.cmake && echo dev.cmake created from template; else echo dev.cmake already exists; fi"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": [],
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "if (-not (Test-Path 'dev.cmake')) { Copy-Item 'cmake/dev.cmake.example' 'dev.cmake'; Write-Output 'dev.cmake created from template' } else { Write-Output 'dev.cmake already exists' }"
+                ]
+            }
+        },
+        {
+            "label": "Config: Remove dev.cmake",
+            "type": "shell",
+            "command": "rm",
+            "args": [
+                "-f",
+                "dev.cmake"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": [],
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "if (Test-Path 'dev.cmake') { Remove-Item 'dev.cmake' -Force }"
+                ]
+            }
+        },
+        {
+            "label": "Reload Project",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Done!",
+            ],
+            "group": "build",
+            "dependsOn": [
+                "Clean Project",
+                "Load Project"
+            ],
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "Reload Project (Shared)",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Done!",
+            ],
+            "group": "build",
+            "dependsOn": [
+                "Clean Project",
+                "Load Project (Shared)"
+            ],
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "Build Project (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"cmake --build build --config Debug --parallel \\$env:NUMBER_OF_PROCESSORS\"; else cmake --build build/Debug --config Debug --parallel $(nproc); fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "if (-not (Test-Path 'build')) { New-Item -ItemType Directory -Path 'build' | Out-Null; Push-Location 'build'; cmake ..; Pop-Location }; cmake --build build --config Debug --parallel $env:NUMBER_OF_PROCESSORS"
+                ],
+                "options": {
+                    "cwd": "${workspaceFolder}"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Build Project (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"cmake --build build --config Release --parallel \\$env:NUMBER_OF_PROCESSORS\"; else cmake --build build/Release --config Release --parallel $(nproc); fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "if (-not (Test-Path 'build')) { New-Item -ItemType Directory -Path 'build' | Out-Null; Push-Location 'build'; cmake ..; Pop-Location }; cmake --build build --config Release --parallel $env:NUMBER_OF_PROCESSORS"
+                ],
+                "options": {
+                    "cwd": "${workspaceFolder}"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Build Project (Debug, Shared)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"cmake --build build_shared --config Debug --parallel \\$env:NUMBER_OF_PROCESSORS\"; else cmake --build build_shared/Debug --config Debug --parallel $(nproc); fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "if (-not (Test-Path 'build_shared')) { New-Item -ItemType Directory -Path 'build_shared' | Out-Null; Push-Location 'build_shared'; cmake .. -DCCAP_BUILD_SHARED=ON; Pop-Location }; cmake --build build_shared --config Debug --parallel $env:NUMBER_OF_PROCESSORS"
+                ],
+                "options": {
+                    "cwd": "${workspaceFolder}"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Build Project (Release, Shared)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"cmake --build build_shared --config Release --parallel \\$env:NUMBER_OF_PROCESSORS\"; else cmake --build build_shared/Release --config Release --parallel $(nproc); fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "if (-not (Test-Path 'build_shared')) { New-Item -ItemType Directory -Path 'build_shared' | Out-Null; Push-Location 'build_shared'; cmake .. -DCCAP_BUILD_SHARED=ON; Pop-Location }; cmake --build build_shared --config Release --parallel $env:NUMBER_OF_PROCESSORS"
+                ],
+                "options": {
+                    "cwd": "${workspaceFolder}"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Load And Build Project (Debug)",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Load And Build Project (Debug) - Done",
+            ],
+            "group": "build",
+            "dependsOn": [
+                "Load Project",
+                "Build Project (Debug)"
+            ],
+            "dependsOrder": "sequence",
+        },
+        {
+            "label": "Load And Build Project (Release)",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Load And Build Project (Release) - Done",
+            ],
+            "group": "build",
+            "dependsOn": [
+                "Load Project",
+                "Build Project (Release)"
+            ],
+            "dependsOrder": "sequence",
+        },
+        {
+            "label": "Load And Build Project (Debug, Shared)",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Load And Build Project (Debug, Shared) - Done",
+            ],
+            "group": "build",
+            "dependsOn": [
+                "Load Project (Shared)",
+                "Build Project (Debug, Shared)"
+            ],
+            "dependsOrder": "sequence",
+        },
+        {
+            "label": "Load And Build Project (Release, Shared)",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Load And Build Project (Release, Shared) - Done",
+            ],
+            "group": "build",
+            "dependsOn": [
+                "Load Project (Shared)",
+                "Build Project (Release, Shared)"
+            ],
+            "dependsOrder": "sequence",
+        },
+        {
+            "label": "Clear Output Images",
+            "type": "shell",
+            "command": "git",
+            "args": [
+                "clean",
+                "-fdx",
+                "**/*.bmp",
+                "**/*.jpg",
+                "**/*.png"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "group": "build"
+        },
+        {
+            "label": "Load iOS Project (macOS only)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "(pod install || pod install --repo-update) && echo Xcode workspace: $(find $(pwd) -iname \"*.xcworkspace\")"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/examples"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Build iOS Project (macOS only)",
+            "type": "shell",
+            "command": "xcodebuild",
+            "args": [
+                "build",
+                "CODE_SIGN_IDENTITY=\"\"",
+                "CODE_SIGNING_REQUIRED=NO",
+                "-workspace",
+                "ccapDemo.xcworkspace",
+                "-scheme",
+                "ccapDemo",
+                "-configuration",
+                "Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/examples"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Load And Build iOS Project (macOS only)",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Done!",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/examples"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Load iOS Project (macOS only)",
+                "Build iOS Project (macOS only)"
+            ],
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "Format All Code",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "./format_all.sh"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/scripts"
+            },
+            "group": "build"
+        },
+        {
+            "label": "Run Functional Tests",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "./run_tests.sh --functional"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/scripts"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Run Functional Tests (Fast)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "./run_tests.sh --functional --exit-when-failed"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/scripts"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Run Performance Tests",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "./run_tests.sh --performance"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/scripts"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Run Shuffle Tests",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "./run_tests.sh --shuffle"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/scripts"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Run Shuffle Tests (Fast)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "./run_tests.sh --shuffle --exit-when-failed"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/scripts"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Run Video Tests",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "./run_tests.sh --video"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/scripts"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Run All Tests",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Done!"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/scripts"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Run Functional Tests",
+                "Run Performance Tests",
+                "Run Video Tests"
+            ],
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "Run 0-print_camera (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./0-print_camera.exe; else ./0-print_camera; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\0-print_camera.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 0-print_camera (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./0-print_camera.exe; else ./0-print_camera; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\0-print_camera.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 1-minimal_example (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./1-minimal_example.exe; else ./1-minimal_example; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\1-minimal_example.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 1-minimal_example (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./1-minimal_example.exe; else ./1-minimal_example; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\1-minimal_example.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 2-capture_grab (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./2-capture_grab.exe; else ./2-capture_grab; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\2-capture_grab.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 2-capture_grab (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./2-capture_grab.exe; else ./2-capture_grab; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\2-capture_grab.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 3-capture_callback (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./3-capture_callback.exe; else ./3-capture_callback; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\3-capture_callback.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 3-capture_callback (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./3-capture_callback.exe; else ./3-capture_callback; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\3-capture_callback.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 4-example_with_glfw (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./4-example_with_glfw.exe; else ./4-example_with_glfw; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\4-example_with_glfw.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 4-example_with_glfw (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./4-example_with_glfw.exe; else ./4-example_with_glfw; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\4-example_with_glfw.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 0-print_camera_c (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./0-print_camera_c.exe; else ./0-print_camera_c; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\0-print_camera_c.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 0-print_camera_c (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./0-print_camera_c.exe; else ./0-print_camera_c; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\0-print_camera_c.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 1-minimal_example_c (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./1-minimal_example_c.exe; else ./1-minimal_example_c; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\1-minimal_example_c.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 1-minimal_example_c (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./1-minimal_example_c.exe; else ./1-minimal_example_c; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\1-minimal_example_c.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 2-capture_grab_c (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./2-capture_grab_c.exe; else ./2-capture_grab_c; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\2-capture_grab_c.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 2-capture_grab_c (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./2-capture_grab_c.exe; else ./2-capture_grab_c; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\2-capture_grab_c.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 3-capture_callback_c (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./3-capture_callback_c.exe; else ./3-capture_callback_c; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\3-capture_callback_c.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 3-capture_callback_c (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./3-capture_callback_c.exe; else ./3-capture_callback_c; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\3-capture_callback_c.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 4-example_with_glfw_c (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./4-example_with_glfw_c.exe; else ./4-example_with_glfw_c; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\4-example_with_glfw_c.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 4-example_with_glfw_c (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./4-example_with_glfw_c.exe; else ./4-example_with_glfw_c; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\4-example_with_glfw_c.exe",
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 5-play_video (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./5-play_video.exe; else ./5-play_video; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\5-play_video.exe",
+                "args": [],
+                "options": {
+                    "cwd": "${workspaceFolder}/build/Debug"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 5-play_video (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./5-play_video.exe; else ./5-play_video; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\5-play_video.exe",
+                "args": [],
+                "options": {
+                    "cwd": "${workspaceFolder}/build/Release"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 5-play_video_c (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./5-play_video_c.exe; else ./5-play_video_c; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\5-play_video_c.exe",
+                "args": [],
+                "options": {
+                    "cwd": "${workspaceFolder}/build/Debug"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 5-play_video_c (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./5-play_video_c.exe; else ./5-play_video_c; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\5-play_video_c.exe",
+                "args": [],
+                "options": {
+                    "cwd": "${workspaceFolder}/build/Release"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 6-record_video (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./6-record_video.exe; else ./6-record_video; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Debug)"
+            ],
+            "windows": {
+                "command": ".\\6-record_video.exe",
+                "args": [],
+                "options": {
+                    "cwd": "${workspaceFolder}/build/Debug"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run 6-record_video (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./6-record_video.exe; else ./6-record_video; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Build Project (Release)"
+            ],
+            "windows": {
+                "command": ".\\6-record_video.exe",
+                "args": [],
+                "options": {
+                    "cwd": "${workspaceFolder}/build/Release"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI --help (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe --help; else ./ccap --help; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Debug)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["--help"],
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI --list-devices (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe --list-devices; else ./ccap --list-devices; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Debug)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["--list-devices"],
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI --preview (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe -d 0 --preview; else ./ccap -d 0 --preview; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Debug)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["-d", "0", "--preview"],
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI capture (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe -d 0 -c 5 -o ./captures; else ./ccap -d 0 -c 5 -o ./captures; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Debug)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["-d", "0", "-c", "5", "-o", ".\\captures"],
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI --help (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe --help; else ./ccap --help; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Release)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["--help"],
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI --list-devices (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe --list-devices; else ./ccap --list-devices; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Release)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["--list-devices"],
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI --preview (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe -d 0 --preview; else ./ccap -d 0 --preview; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Release)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["-d", "0", "--preview"],
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI capture (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe -d 0 -c 5 -o ./captures; else ./ccap -d 0 -c 5 -o ./captures; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Release)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["-d", "0", "-c", "5", "-o", ".\\captures"],
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run Rust print_camera",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "run",
+                "--example",
+                "print_camera"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/bindings/rust"
+            },
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "Run Rust minimal_example",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "run",
+                "--example",
+                "minimal_example"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/bindings/rust"
+            },
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "Run Rust capture_grab",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "run",
+                "--example",
+                "capture_grab"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/bindings/rust"
+            },
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "Run Rust capture_callback",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "run",
+                "--example",
+                "capture_callback"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/bindings/rust"
+            },
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "Build Rust Bindings",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/bindings/rust"
+            },
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "Build Rust Examples",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--examples"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/bindings/rust"
+            },
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "Test Rust Bindings",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "test"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/bindings/rust"
+            },
+            "group": "build",
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "Run ccap CLI --video test.mp4 (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe --video test.mp4 -c 10 -o ./video_frames; else ./ccap --video test.mp4 -c 10 -o ./video_frames; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Debug)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["--video", "test.mp4", "-c", "10", "-o", ".\\video_frames"],
+                "options": {
+                    "cwd": "${workspaceFolder}/build/Debug"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI --video test.mp4 (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe --video test.mp4 -c 10 -o ./video_frames; else ./ccap --video test.mp4 -c 10 -o ./video_frames; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Release)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["--video", "test.mp4", "-c", "10", "-o", ".\\video_frames"],
+                "options": {
+                    "cwd": "${workspaceFolder}/build/Release"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI --preview video (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe -i test.mp4 --preview; else ./ccap -i test.mp4 --preview; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Debug)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["-i", "test.mp4", "--preview"],
+                "options": {
+                    "cwd": "${workspaceFolder}/build/Debug"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI --preview video (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe -i test.mp4 --preview; else ./ccap -i test.mp4 --preview; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Release)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["-i", "test.mp4", "--preview"],
+                "options": {
+                    "cwd": "${workspaceFolder}/build/Release"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI --record camera (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe -w 1280 -H 720 --record ./camera_capture.mp4 --timeout 5 --preview; else ./ccap --record ./camera_capture.mp4 -w 1280 -H 720 --timeout 5 --preview; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Debug"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Debug)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["--record", ".\\camera_capture.mp4", "-w", "1280", "-H", "720", "--timeout", "5", "--preview"],
+                "options": {
+                    "cwd": "${workspaceFolder}/build/Debug"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        },
+        {
+            "label": "Run ccap CLI --record camera (Release)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-l",
+                "-c",
+                "( if [[ $(pwd) =~ ^/mnt ]]; then ./ccap.exe -w 1280 -H 720 --record ./camera_capture.mp4 --timeout 5 --preview; else ./ccap --record ./camera_capture.mp4 -w 1280 -H 720 --timeout 5 --preview; fi )"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build/Release"
+            },
+            "group": "build",
+            "problemMatcher": "$gcc",
+            "dependsOn": [
+                "Config: Enable CLI Tool",
+                "Build Project (Release)"
+            ],
+            "dependsOrder": "sequence",
+            "windows": {
+                "command": ".\\ccap.exe",
+                "args": ["--record", ".\\camera_capture.mp4", "-w", "1280", "-H", "720", "--timeout", "5", "--preview"],
+                "options": {
+                    "cwd": "${workspaceFolder}/build/Release"
+                },
+                "problemMatcher": "$msCompile"
+            }
+        }
+    ]
+}

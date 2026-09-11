@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ccap - Cross-Platform Camera Capture Library</title>
+    <meta name="description" content="A high-performance, lightweight cross-platform camera capture library with hardware-accelerated pixel format conversion, plus Rust bindings.">
+    <meta name="keywords" content="camera capture, C++, C, Rust, bindings, cross-platform, Windows, Media Foundation, DirectShow, macOS, iOS, Linux, AVFoundation, V4L2">
+    <link rel="canonical" href="https://ccap.work/">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/cpp.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/c.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/cmake.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <a href="index.html" class="logo">ccap</a>
+            <button class="mobile-menu-toggle" aria-label="Toggle menu">☰</button>
+            <ul class="nav-links">
+                <li><a href="#download"><span class="lang-en">Download</span><span class="lang-zh">下载</span></a></li>
+                <li><a href="#features"><span class="lang-en">Features</span><span class="lang-zh">特性</span></a></li>
+                <li><a href="#quickstart"><span class="lang-en">Quick Start</span><span class="lang-zh">快速开始</span></a></li>
+                <li class="nav-dropdown">
+                    <a href="documentation.html"><span class="lang-en">Documentation</span><span class="lang-zh">文档</span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="documentation.html?doc=c-interface"><span class="lang-en">C Interface</span><span class="lang-zh">C 接口</span></a></li>
+                        <li><a href="documentation.html?doc=implementation-details"><span class="lang-en">Implementation Details</span><span class="lang-zh">实现细节</span></a></li>
+                        <li><a href="documentation.html?doc=video-memory-management"><span class="lang-en">Memory & Video Playback</span><span class="lang-zh">内存管理与视频播放</span></a></li>
+                        <li><a href="documentation.html?doc=cmake-options"><span class="lang-en">CMake Build Options</span><span class="lang-zh">CMake 构建选项</span></a></li>
+                        <li><a href="documentation.html?doc=rust-bindings"><span class="lang-en">Rust Bindings</span><span class="lang-zh">Rust 绑定</span></a></li>
+                    </ul>
+                </li>
+                <li><a href="documentation.html?doc=cli"><span class="lang-en">CLI Tool</span><span class="lang-zh">CLI 工具</span></a></li>
+                <li><a href="https://github.com/wysaid/CameraCapture">GitHub</a></li>
+                <li><button class="lang-switch" onclick="ccap.toggleLanguage()">🌐 中文</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h1>(C)amera(CAP)ture</h1>
+            <p class="subtitle lang-en">A lightweight, high-performance cross-platform camera capture library with video file playback support, plus Rust bindings.</p>
+            <p class="subtitle lang-zh">轻量级、高性能的跨平台相机捕获库，支持视频文件播放，并提供 Rust bindings。</p>
+            <p class="tagline lang-en">Hardware-accelerated conversion with AVX2, Apple Accelerate, NEON</p>
+            <p class="tagline lang-zh">支持 AVX2、Apple Accelerate、NEON 硬件加速</p>
+            
+            <div class="badges">
+                <a href="https://opensource.org/licenses/MIT">
+                    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License">
+                </a>
+                <img src="https://img.shields.io/badge/C++-17-blue.svg" alt="C++17">
+                <img src="https://img.shields.io/badge/C-99-blue.svg" alt="C99">
+                <a href="documentation.html?doc=rust-bindings">
+                    <img src="https://img.shields.io/badge/Rust-bindings-orange.svg" alt="Rust bindings">
+                </a>
+            </div>
+            
+            <div class="cta-buttons">
+                <a href="#download" class="btn btn-download">
+                    <span class="lang-en">Download</span><span class="lang-zh">下载</span>
+                    <span class="version latest-version">Latest</span>
+                </a>
+                <a href="https://github.com/wysaid/CameraCapture" class="btn btn-secondary">
+                    <span class="lang-en">View on GitHub</span><span class="lang-zh">在 GitHub 上查看</span>
+                </a>
+                <a href="documentation.html" class="btn btn-secondary lang-en">Documentation</a>
+                <a href="documentation.html" class="btn btn-secondary lang-zh">文档</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download-section">
+        <div class="container">
+            <div class="download-header">
+                <h2 class="lang-en">Download ccap <span class="latest-version">Latest</span></h2>
+                <h2 class="lang-zh">下载 ccap <span class="latest-version">Latest</span></h2>
+                <p class="lang-en">Pre-built binaries for all supported platforms</p>
+                <p class="lang-zh">所有支持平台的预编译二进制文件</p>
+            </div>
+            
+            <div id="download-links" class="download-loading">
+                <p class="lang-en">Loading release information...</p>
+                <p class="lang-zh">正在加载版本信息...</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title lang-en">Features</h2>
+            <h2 class="section-title lang-zh">特性</h2>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3 class="lang-en">High Performance</h3>
+                    <h3 class="lang-zh">高性能</h3>
+                    <p class="lang-en">Hardware-accelerated pixel format conversion with up to 10x speedup using AVX2, Apple Accelerate, and NEON.</p>
+                    <p class="lang-zh">硬件加速的像素格式转换，使用 AVX2、Apple Accelerate 和 NEON 可提升高达 10 倍性能。</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🪶</div>
+                    <h3 class="lang-en">Lightweight</h3>
+                    <h3 class="lang-zh">轻量级</h3>
+                    <p class="lang-en">No third-party dependencies - uses only system frameworks for maximum portability.</p>
+                    <p class="lang-zh">无第三方库依赖，仅使用系统框架，实现最大可移植性。</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🌍</div>
+                    <h3 class="lang-en">Cross Platform</h3>
+                    <h3 class="lang-zh">跨平台</h3>
+                    <p class="lang-en">Native support for Windows dual backends (DirectShow by default, Media Foundation also supported), macOS/iOS (AVFoundation), and Linux (V4L2).</p>
+                    <p class="lang-zh">原生支持 Windows 双后端（默认 DirectShow，同时支持 Media Foundation）、macOS/iOS (AVFoundation) 和 Linux (V4L2)。</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3 class="lang-en">Multiple Formats</h3>
+                    <h3 class="lang-zh">多种格式</h3>
+                    <p class="lang-en">Support for RGB, BGR, YUV (NV12/I420) with automatic format conversion.</p>
+                    <p class="lang-zh">支持 RGB、BGR、YUV（NV12/I420）及自动格式转换。</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔧</div>
+                    <h3 class="lang-en">Dual Language APIs</h3>
+                    <h3 class="lang-zh">双语言接口</h3>
+                    <p class="lang-en">Both modern C++ API and pure C99 interface for various project integration and language bindings.</p>
+                    <p class="lang-zh">同时提供现代 C++ API 和纯 C99 接口，支持各种项目集成和语言绑定。</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">✅</div>
+                    <h3 class="lang-en">Production Ready</h3>
+                    <h3 class="lang-zh">生产就绪</h3>
+                    <p class="lang-en">Comprehensive test suite with 95%+ accuracy validation and 50+ test cases.</p>
+                    <p class="lang-zh">完整测试套件，95%+ 精度验证，50+ 测试用例。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="platforms" class="platforms">
+        <div class="container">
+            <h2 class="section-title lang-en">Supported Platforms</h2>
+            <h2 class="section-title lang-zh">支持的平台</h2>
+            
+            <div class="platform-grid">
+                <div class="platform-item">
+                    <div style="font-size: 3rem;">🪟</div>
+                    <h4>Windows</h4>
+                    <p>DirectShow default + Media Foundation support</p>
+                    <p>MSVC 2019+</p>
+                </div>
+                
+                <div class="platform-item">
+                    <div style="font-size: 3rem;">🍎</div>
+                    <h4>macOS</h4>
+                    <p>AVFoundation</p>
+                    <p>Xcode 11+, macOS 10.13+</p>
+                </div>
+                
+                <div class="platform-item">
+                    <div style="font-size: 3rem;">📱</div>
+                    <h4>iOS</h4>
+                    <p>AVFoundation</p>
+                    <p>Xcode 11+, iOS 13.0+</p>
+                </div>
+                
+                <div class="platform-item">
+                    <div style="font-size: 3rem;">🐧</div>
+                    <h4>Linux</h4>
+                    <p>V4L2</p>
+                    <p>GCC 7+ / Clang 6+</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="quickstart" class="code-section">
+        <div class="container">
+            <h2 class="section-title lang-en">Quick Start</h2>
+            <h2 class="section-title lang-zh">快速开始</h2>
+            
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="ccap.showCode('cpp', event)">C++</button>
+                <button class="code-tab" onclick="ccap.showCode('c', event)">C</button>
+                <button class="code-tab" onclick="ccap.showCode('rust', event)">Rust</button>
+            </div>
+            
+            <div class="code-block">
+                <div id="code-cpp" class="code-content active">
+<pre><code class="language-cpp">// C++ Example
+#include &lt;ccap.h&gt;
+
+int main() {
+    ccap::Provider provider;
+    
+    // List available cameras
+    auto devices = provider.findDeviceNames();
+    for (size_t i = 0; i &lt; devices.size(); ++i) {
+        printf("[%zu] %s\n", i, devices[i].c_str());
+    }
+    
+    // Open and start camera
+    if (provider.open("", true)) {
+        auto frame = provider.grab(3000);
+        if (frame) {
+            printf("Captured: %dx%d\n", 
+                   frame-&gt;width, frame-&gt;height);
+        }
+    }
+    return 0;
+}</code></pre>
+                </div>
+                
+                <div id="code-c" class="code-content">
+<pre><code class="language-c">// Pure C Example
+#include &lt;ccap_c.h&gt;
+#include &lt;ccap_utils_c.h&gt;
+
+int main() {
+    CcapProvider* provider = ccap_provider_create();
+    if (!provider) return -1;
+    
+    // Find available devices
+    CcapDeviceNamesList deviceList;
+    if (ccap_provider_find_device_names_list(provider, &amp;deviceList)) {
+        printf("Found %zu camera(s)\n", deviceList.deviceCount);
+    }
+    
+    // Open and capture
+    if (ccap_provider_open(provider, NULL, true)) {
+        CcapVideoFrame* frame = ccap_provider_grab(provider, 3000);
+        if (frame) {
+            CcapVideoFrameInfo info;
+            ccap_video_frame_get_info(frame, &amp;info);
+            printf("Captured: %dx%d\n", info.width, info.height);
+            ccap_video_frame_release(frame);
+        }
+    }
+    
+    ccap_provider_destroy(provider);
+    return 0;
+}</code></pre>
+                </div>
+
+                <div id="code-rust" class="code-content">
+<pre><code class="language-rust">// Rust Example
+// Cargo.toml:
+// ccap = { package = "ccap-rs", version = "&lt;latest&gt;" }
+
+use ccap::{Provider, Result};
+
+fn main() -&gt; Result&lt;()&gt; {
+    let mut provider = Provider::new()?;
+
+    let devices = provider.find_device_names()?;
+    println!("Found {} camera(s)", devices.len());
+
+    if let Some(first) = devices.get(0) {
+        provider.open_device(Some(first), true)?;
+
+        if let Some(frame) = provider.grab_frame(3000)? {
+            let info = frame.info()?;
+            println!("Captured: {}x{}", info.width, info.height);
+        }
+    }
+
+    Ok(())
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="install" class="install">
+        <div class="container">
+            <h2 class="section-title lang-en">Installation</h2>
+            <h2 class="section-title lang-zh">安装</h2>
+            
+            <div class="install-methods">
+                <div class="install-method">
+                    <h3 class="lang-en">Build from Source</h3>
+                    <h3 class="lang-zh">从源码构建</h3>
+                    <pre><code class="language-bash">git clone https://github.com/wysaid/CameraCapture.git
+cd CameraCapture
+./scripts/build_and_install.sh</code></pre>
+                </div>
+                
+                <div class="install-method">
+                    <h3>CMake FetchContent</h3>
+                    <pre><code class="language-cmake">include(FetchContent)
+FetchContent_Declare(ccap
+  GIT_REPOSITORY https://github.com/wysaid/CameraCapture.git
+  GIT_TAG main)
+FetchContent_MakeAvailable(ccap)
+
+target_link_libraries(your_app PRIVATE ccap::ccap)</code></pre>
+                </div>
+                
+                <div class="install-method">
+                    <h3>Homebrew (macOS)</h3>
+                    <pre><code class="language-bash">brew tap wysaid/ccap
+brew install ccap</code></pre>
+                </div>
+
+                <div class="install-method">
+                    <h3 class="lang-en">Rust (crates.io)</h3>
+                    <h3 class="lang-zh">Rust（crates.io）</h3>
+                    <pre><code class="language-bash">cargo add ccap-rs
+# Recommended in Cargo.toml:
+# ccap = { package = "ccap-rs", version = "&lt;latest&gt;" }</code></pre>
+                </div>
+                
+                <div class="install-method">
+                    <h3 class="lang-en">CMake Integration</h3>
+                    <h3 class="lang-zh">CMake 集成</h3>
+                    <pre><code class="language-cmake">find_package(ccap REQUIRED)
+target_link_libraries(your_app ccap::ccap)</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="requirements">
+        <div class="container">
+            <h2 class="section-title lang-en">System Requirements</h2>
+            <h2 class="section-title lang-zh">系统要求</h2>
+            
+            <table class="requirements-table">
+                <thead>
+                    <tr>
+                        <th><span class="lang-en">Platform</span><span class="lang-zh">平台</span></th>
+                        <th><span class="lang-en">Compiler</span><span class="lang-zh">编译器</span></th>
+                        <th><span class="lang-en">Requirements</span><span class="lang-zh">要求</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Windows</td>
+                        <td>MSVC 2019+</td>
+                        <td>DirectShow default + Media Foundation support</td>
+                    </tr>
+                    <tr>
+                        <td>macOS</td>
+                        <td>Xcode 11+</td>
+                        <td>macOS 10.13+</td>
+                    </tr>
+                    <tr>
+                        <td>iOS</td>
+                        <td>Xcode 11+</td>
+                        <td>iOS 13.0+</td>
+                    </tr>
+                    <tr>
+                        <td>Linux</td>
+                        <td>GCC 7+ / Clang 6+</td>
+                        <td>V4L2 (Linux 2.6+)</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <p style="text-align: center; margin-top: 20px; color: var(--text-light);">
+                <span class="lang-en">Build Requirements: CMake 3.14+, C++17 (C++ interface), C99 (C interface)</span>
+                <span class="lang-zh">构建要求：CMake 3.14+，C++17（C++ 接口），C99（C 接口）</span>
+            </p>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4 class="lang-en">Download</h4>
+                    <h4 class="lang-zh">下载</h4>
+                    <ul>
+                        <li><a href="https://github.com/wysaid/CameraCapture/releases"><span class="lang-en">Releases</span><span class="lang-zh">版本发布</span></a></li>
+                        <li><a href="https://github.com/wysaid/CameraCapture/releases/latest"><span class="lang-en">Latest Release</span><span class="lang-zh">最新版本</span></a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4 class="lang-en">Documentation</h4>
+                    <h4 class="lang-zh">文档</h4>
+                    <ul>
+                        <li><a href="documentation.html"><span class="lang-en">Getting Started</span><span class="lang-zh">快速开始</span></a></li>
+                        <li><a href="documentation.html?doc=cli"><span class="lang-en">CLI Tool</span><span class="lang-zh">CLI 工具</span></a></li>
+                        <li><a href="documentation.html?doc=c-interface"><span class="lang-en">C Interface</span><span class="lang-zh">C 接口</span></a></li>
+                        <li><a href="documentation.html?doc=rust-bindings"><span class="lang-en">Rust Bindings</span><span class="lang-zh">Rust 绑定</span></a></li>
+                        <li><a href="documentation.html?doc=implementation-details"><span class="lang-en">Implementation Details</span><span class="lang-zh">实现细节</span></a></li>
+                        <li><a href="documentation.html?doc=video-memory-management"><span class="lang-en">Memory Management</span><span class="lang-zh">内存管理</span></a></li>
+                        <li><a href="documentation.html?doc=cmake-options"><span class="lang-en">CMake Options</span><span class="lang-zh">CMake 选项</span></a></li>
+                        <li><a href="https://github.com/wysaid/CameraCapture/blob/main/BUILD_AND_INSTALL.md"><span class="lang-en">Build Guide</span><span class="lang-zh">构建指南</span></a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4 class="lang-en">Community</h4>
+                    <h4 class="lang-zh">社区</h4>
+                    <ul>
+                        <li><a href="https://github.com/wysaid/CameraCapture">GitHub</a></li>
+                        <li><a href="https://github.com/wysaid/CameraCapture/issues">Issues</a></li>
+                        <li><a href="https://github.com/wysaid/CameraCapture/pulls">Pull Requests</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4 class="lang-en">License</h4>
+                    <h4 class="lang-zh">许可证</h4>
+                    <ul>
+                        <li><a href="https://github.com/wysaid/CameraCapture/blob/main/LICENSE">MIT License</a></li>
+                        <li>© 2025 Wang Yang</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>ccap - Cross-Platform Camera Capture Library</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

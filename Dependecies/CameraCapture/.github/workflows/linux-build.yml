@@ -1,0 +1,607 @@
+name: Linux Build
+
+on:
+  push:
+    branches: [ main, develop, support_linux ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+jobs:
+  check-env:
+    name: "Check Environment"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create check_env.cpp
+        run: |
+          cat > check_env.cpp << 'EOF'
+          #include <iostream>
+          #include <cstdlib>
+          #include <string>
+
+          int main() {
+              const char* env_p = std::getenv("GITHUB_ACTIONS");
+              if (env_p) {
+                  std::cout << "GITHUB_ACTIONS=" << env_p << std::endl;
+                  std::string env_str(env_p);
+                  if (env_str == "true") {
+                      return 0;
+                  }
+              } else {
+                  std::cout << "GITHUB_ACTIONS is not set" << std::endl;
+              }
+              return 1;
+          }
+          EOF
+
+      - name: Compile check_env.cpp
+        run: g++ check_env.cpp -o check_env
+
+      - name: Run check_env
+        run: ./check_env
+
+  build-ubuntu:
+    name: "Build (${{ matrix.build_type }}-gcc-${{ matrix.library_type }})"
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+        library_type: [static, shared]
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    # Cache APT packages to avoid repeated downloads
+    - name: Cache APT packages
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: cmake build-essential gcc libasan6 libwayland-dev libxkbcommon-dev wayland-protocols libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+        version: 1.0
+    
+    - name: Install base dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential gcc libasan6 \
+          libwayland-dev libxkbcommon-dev wayland-protocols \
+          libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+        
+    - name: Install GLFW (for Release builds only)
+      if: matrix.build_type == 'Release'
+      run: |
+        sudo apt-get install -y libglfw3-dev
+        echo "GLFW_INSTALLED=true" >> $GITHUB_ENV
+    
+    # Cache CMake build directory to speed up incremental builds
+    - name: Setup CMake build cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/CMakeFiles
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/CMakeCache.txt
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/**/*.o
+        key: ${{ runner.os }}-gcc-${{ matrix.build_type }}-${{ matrix.library_type }}-${{ hashFiles('CMakeLists.txt', 'src/**', 'include/**') }}
+        restore-keys: |
+          ${{ runner.os }}-gcc-${{ matrix.build_type }}-${{ matrix.library_type }}-
+          ${{ runner.os }}-gcc-${{ matrix.build_type }}-
+        
+    - name: Setup compiler
+      run: |
+        echo "CC=gcc" >> $GITHUB_ENV
+        echo "CXX=g++" >> $GITHUB_ENV
+        
+    - name: Configure CMake
+      run: |
+        if [ "${{ matrix.library_type }}" = "shared" ]; then
+          SHARED_FLAG="-DCCAP_BUILD_SHARED=ON"
+          echo "Configuring build ${{ matrix.build_type }} with gcc (SHARED LIBRARY)"
+        else
+          SHARED_FLAG=""
+          echo "Configuring build ${{ matrix.build_type }} with gcc (STATIC LIBRARY)"
+        fi
+        cmake -B build/${{ matrix.build_type }}-${{ matrix.library_type }} \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCCAP_BUILD_EXAMPLES=ON \
+              -DCCAP_BUILD_TESTS=ON \
+              -DCCAP_BUILD_CLI=ON \
+              $SHARED_FLAG
+    
+    - name: Build
+      run: cmake --build build/${{ matrix.build_type }}-${{ matrix.library_type }} --config ${{ matrix.build_type }} --parallel $(nproc)
+    
+    - name: Verify library type and GLFW examples build status
+      working-directory: build/${{ matrix.build_type }}-${{ matrix.library_type }}
+      run: |
+        echo "Checking built examples:"
+        ls -la | grep -E "(glfw|example)" || echo "No GLFW examples found"
+        
+        # Verify library type
+        if [ "${{ matrix.library_type }}" = "shared" ]; then
+          if [ -f "libccap.so" ]; then
+            echo "✓ Shared library libccap.so successfully built"
+            echo "Exported symbols check:"
+            nm -gD libccap.so | grep "ccap_provider_create" && echo "✓ C symbols exported" || echo "✗ C symbols not found"
+            nm -gD libccap.so | grep "_ZN4ccap" | head -2 && echo "✓ C++ symbols exported" || echo "✗ C++ symbols not found"
+          else
+            echo "✗ Shared library not found"
+            exit 1
+          fi
+        else
+          if [ -f "libccap.a" ]; then
+            echo "✓ Static library libccap.a successfully built"
+          else
+            echo "✗ Static library not found"
+            exit 1
+          fi
+        fi
+        
+        if [ "${{ matrix.build_type }}" = "Release" ]; then
+          echo "Release build - checking if GLFW examples were built with system GLFW:"
+          if [ -f "4-example_with_glfw" ]; then
+            echo "✓ GLFW example successfully built with system GLFW"
+          else
+            echo "✗ GLFW example not found - this might indicate a build issue"
+            exit 1
+          fi
+        else
+          echo "Debug build - checking if bundled GLFW was used:"
+          if [ -f "4-example_with_glfw" ]; then
+            echo "✓ GLFW example successfully built with bundled GLFW"
+          else
+            echo "ℹ GLFW example not built - using bundled GLFW or GLFW disabled"
+          fi
+        fi
+    
+    - name: Test shared library linking
+      if: matrix.library_type == 'shared'
+      working-directory: build/${{ matrix.build_type }}-${{ matrix.library_type }}
+      run: |
+        echo "Testing shared library linking..."
+        
+        # Create a simple test program
+        cat > test_shared.cpp << 'EOF'
+        #include "ccap_c.h"
+        #include <stdio.h>
+        int main() {
+            const char* version = ccap_get_version();
+            printf("Library version: %s\n", version ? version : "unknown");
+            CcapProvider* provider = ccap_provider_create();
+            if (provider) {
+                printf("Provider created successfully\n");
+                ccap_provider_destroy(provider);
+                return 0;
+            }
+            return 1;
+        }
+        EOF
+        
+        # Compile and run with shared library
+        gcc -I../../include test_shared.cpp -L. -lccap -Wl,-rpath=. -o test_shared
+        ./test_shared
+        echo "✓ Shared library linking test passed"
+    
+    - name: Run Unit Tests
+      if: matrix.build_type == 'Release'
+      run: |
+        # Create symbolic links to make test script work with new build directory structure
+        mkdir -p build
+        if [ ! -L "build/${{ matrix.build_type }}" ]; then
+          ln -sf "${{ matrix.build_type }}-${{ matrix.library_type }}" "build/${{ matrix.build_type }}"
+        fi
+        
+        cd scripts
+        # Set library type specific environment if needed
+        if [ "${{ matrix.library_type }}" = "shared" ]; then
+          export LD_LIBRARY_PATH="$PWD/../build/${{ matrix.build_type }}-${{ matrix.library_type }}:$LD_LIBRARY_PATH"
+        fi
+        # Run tests with AddressSanitizer enabled by default (improves memory error detection)
+        ./run_tests.sh --functional --exit-when-failed
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ccap-linux-gcc-${{ matrix.build_type }}-${{ matrix.library_type }}
+        path: |
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/libccap.*
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/0-print_camera
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/1-minimal_example
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/2-capture_grab
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/3-capture_callback
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/4-example_with_glfw
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/*_results.xml
+        if-no-files-found: warn
+
+  build-ubuntu-clang:
+    name: "Build (${{ matrix.build_type }}-clang-${{ matrix.library_type }})"
+    runs-on: ubuntu-latest
+    # Run clang builds on push to main and on pull requests
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+        library_type: [static, shared]
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    # Cache APT packages to avoid repeated downloads
+    - name: Cache APT packages
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: cmake build-essential clang libglfw3-dev libasan6 libwayland-dev libxkbcommon-dev wayland-protocols libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+        version: 1.0
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential clang libglfw3-dev libasan6 \
+          libwayland-dev libxkbcommon-dev wayland-protocols \
+          libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+    
+    # Cache CMake build directory to speed up incremental builds
+    - name: Setup CMake build cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/CMakeFiles
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/CMakeCache.txt
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/**/*.o
+        key: ${{ runner.os }}-clang-${{ matrix.build_type }}-${{ matrix.library_type }}-${{ hashFiles('CMakeLists.txt', 'src/**', 'include/**') }}
+        restore-keys: |
+          ${{ runner.os }}-clang-${{ matrix.build_type }}-${{ matrix.library_type }}-
+          ${{ runner.os }}-clang-${{ matrix.build_type }}-
+        
+    - name: Setup compiler
+      run: |
+        echo "CC=clang" >> $GITHUB_ENV
+        echo "CXX=clang++" >> $GITHUB_ENV
+        
+    - name: Configure CMake
+      run: |
+        if [ "${{ matrix.library_type }}" = "shared" ]; then
+          SHARED_FLAG="-DCCAP_BUILD_SHARED=ON"
+          echo "Configuring build ${{ matrix.build_type }} with clang (SHARED LIBRARY with system GLFW)"
+        else
+          SHARED_FLAG=""
+          echo "Configuring build ${{ matrix.build_type }} with clang (STATIC LIBRARY with system GLFW)"
+        fi
+        cmake -B build/${{ matrix.build_type }}-${{ matrix.library_type }} \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCCAP_BUILD_EXAMPLES=ON \
+              -DCCAP_BUILD_TESTS=ON \
+              -DCCAP_BUILD_CLI=ON \
+              $SHARED_FLAG
+    
+    - name: Build
+      run: cmake --build build/${{ matrix.build_type }}-${{ matrix.library_type }} --config ${{ matrix.build_type }} --parallel $(nproc)
+    
+    - name: Verify build outputs and library type
+      working-directory: build/${{ matrix.build_type }}-${{ matrix.library_type }}
+      run: |
+        echo "Checking built examples:"
+        ls -la | grep -E "(glfw|example)" || echo "No examples found"
+        
+        # Verify library type
+        if [ "${{ matrix.library_type }}" = "shared" ]; then
+          if [ -f "libccap.so" ]; then
+            echo "✓ Shared library libccap.so successfully built"
+          else
+            echo "✗ Shared library not found"
+            exit 1
+          fi
+        else
+          if [ -f "libccap.a" ]; then
+            echo "✓ Static library libccap.a successfully built"
+          else
+            echo "✗ Static library not found"
+            exit 1
+          fi
+        fi
+        
+        echo "✓ Build completed successfully"
+    
+    - name: Run Unit Tests
+      if: matrix.build_type == 'Release'
+      run: |
+        # Create symbolic links to make test script work with new build directory structure
+        mkdir -p build
+        if [ ! -L "build/${{ matrix.build_type }}" ]; then
+          ln -sf "${{ matrix.build_type }}-${{ matrix.library_type }}" "build/${{ matrix.build_type }}"
+        fi
+        
+        cd scripts
+        # Set library type specific environment if needed
+        if [ "${{ matrix.library_type }}" = "shared" ]; then
+          export LD_LIBRARY_PATH="$PWD/../build/${{ matrix.build_type }}-${{ matrix.library_type }}:$LD_LIBRARY_PATH"
+        fi
+        # Run tests with AddressSanitizer enabled by default
+        # This helps catch memory errors early in CI
+        ./run_tests.sh --functional --exit-when-failed
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ccap-linux-clang-${{ matrix.build_type }}-${{ matrix.library_type }}
+        path: |
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/libccap.*
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/0-print_camera
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/1-minimal_example
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/2-capture_grab
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/3-capture_callback
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/4-example_with_glfw
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/*_results.xml
+        if-no-files-found: warn
+
+  build-ubuntu-arm64:
+    name: "Build ARM64 (${{ matrix.build_type }}-gcc-${{ matrix.library_type }})"
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+        library_type: [static, shared]
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    # Cache APT packages for cross-compilation toolchain
+    - name: Cache cross-compilation toolchain packages
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: cmake build-essential gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libwayland-dev libxkbcommon-dev wayland-protocols libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+        version: 1.0
+    
+    - name: Install cross-compilation toolchain
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+          libwayland-dev libxkbcommon-dev wayland-protocols \
+          libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+        echo "Cross-compilation toolchain installed"
+    
+    # Cache CMake build directory for ARM64
+    - name: Setup CMake build cache for ARM64
+      uses: actions/cache@v4
+      with:
+        path: |
+          build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}/CMakeFiles
+          build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}/CMakeCache.txt
+          build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}/**/*.o
+        key: ${{ runner.os }}-arm64-gcc-${{ matrix.build_type }}-${{ matrix.library_type }}-${{ hashFiles('CMakeLists.txt', 'src/**', 'include/**') }}
+        restore-keys: |
+          ${{ runner.os }}-arm64-gcc-${{ matrix.build_type }}-${{ matrix.library_type }}-
+          ${{ runner.os }}-arm64-gcc-${{ matrix.build_type }}-
+        
+    - name: Configure CMake for ARM64
+      run: |
+        if [ "${{ matrix.library_type }}" = "shared" ]; then
+          SHARED_FLAG="-DCCAP_BUILD_SHARED=ON"
+          echo "Configuring build ${{ matrix.build_type }} for ARM64 (SHARED LIBRARY cross-compilation)"
+        else
+          SHARED_FLAG=""
+          echo "Configuring build ${{ matrix.build_type }} for ARM64 (STATIC LIBRARY cross-compilation)"
+        fi
+        cmake -B build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }} \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+              -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+              -DCMAKE_SYSTEM_NAME=Linux \
+              -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+              -DCMAKE_CROSSCOMPILING=ON \
+              -DCCAP_BUILD_EXAMPLES=ON \
+              -DCCAP_BUILD_TESTS=ON \
+              -DCCAP_BUILD_CLI=ON \
+              $SHARED_FLAG
+  
+    - name: Build ARM64
+      run: cmake --build build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }} --config ${{ matrix.build_type }} --parallel $(nproc)
+
+    - name: Build ARM64 test target (Release only)
+      if: matrix.build_type == 'Release'
+      run: |
+        cmake --build build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }} --config ${{ matrix.build_type }} --target ccap_convert_test --parallel $(nproc)
+
+    # Cache QEMU installation
+    - name: Cache QEMU
+      if: (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && matrix.build_type == 'Release'
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: qemu-user qemu-user-static
+        version: 1.0
+
+    - name: Install QEMU for ARM64 test emulation (PRs and main push, Release only)
+      if: (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && matrix.build_type == 'Release'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y qemu-user qemu-user-static
+        qemu-aarch64 --version
+
+    - name: Run ARM64 Unit Tests (PRs and main push, Release only)
+      if: (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && matrix.build_type == 'Release'
+      run: |
+        TEST_BIN="build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}/tests/ccap_convert_test"
+        if [ ! -x "$TEST_BIN" ]; then
+          echo "Test binary not found: $TEST_BIN" >&2
+          ls -la "build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}" || true
+          exit 1
+        fi
+        echo "Verifying test binary architecture:"
+        file "$TEST_BIN" || true
+        echo "Running ARM64 unit tests via QEMU..."
+        # Use the ARM64 sysroot provided by the cross toolchain for dynamic libs
+        qemu-aarch64 -L /usr/aarch64-linux-gnu "$TEST_BIN" \
+          --gtest_fail_fast \
+          --gtest_output=xml:build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}/arm64_results.xml
+        echo "✓ ARM64 unit tests finished"
+
+    - name: Verify build outputs and library type
+      working-directory: build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}
+      run: |
+        echo "Checking built ARM64 binaries:"
+        ls -la | grep -E "(ccap|example)" || echo "No examples found"
+        
+        # Verify library type and architecture
+        if [ "${{ matrix.library_type }}" = "shared" ]; then
+          if [ -f "libccap.so" ]; then
+            echo "✓ ARM64 shared library libccap.so successfully built"
+            file libccap.so | grep -q "aarch64" && echo "✓ Library is ARM64" || echo "⚠ Library architecture verification failed"
+          else
+            echo "✗ ARM64 shared library not found"
+            exit 1
+          fi
+        else
+          if [ -f "libccap.a" ]; then
+            echo "✓ ARM64 static library libccap.a successfully built"
+            file libccap.a | grep -q "aarch64" && echo "✓ Library is ARM64" || echo "⚠ Library architecture verification failed"
+          else
+            echo "✗ ARM64 static library not found"
+            exit 1
+          fi
+        fi
+        
+        if [ -f "0-print_camera" ]; then
+          file 0-print_camera | grep -q "aarch64" && echo "✓ Binary is ARM64" || echo "⚠ Binary architecture verification failed"
+        fi
+        echo "✓ ARM64 cross-compilation completed successfully"
+
+    - name: Upload ARM64 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ccap-linux-arm64-gcc-${{ matrix.build_type }}-${{ matrix.library_type }}
+        path: |
+          build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}/libccap.*
+          build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}/0-print_camera
+          build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}/1-minimal_example
+          build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}/2-capture_grab
+          build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}/3-capture_callback
+          build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}/4-example_with_glfw
+          build/arm64/${{ matrix.build_type }}-${{ matrix.library_type }}/*_results.xml
+        if-no-files-found: warn
+
+  build-fedora:
+    name: "Build Fedora (${{ matrix.build_type }}-${{ matrix.library_type }})"
+    runs-on: ubuntu-latest
+    container: 
+      image: fedora:latest
+    
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+        library_type: [static, shared]
+    
+    steps:
+    - name: Install Git first
+      run: |
+        dnf update -y
+        dnf install -y git
+    
+    # Cache DNF packages to avoid repeated downloads in Fedora container
+    - name: Cache DNF packages
+      uses: actions/cache@v4
+      with:
+        path: /var/cache/dnf
+        key: fedora-dnf-${{ hashFiles('.github/workflows/linux-build.yml') }}
+        restore-keys: |
+          fedora-dnf-
+        
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install dependencies
+      run: |
+        dnf install -y cmake gcc-c++ make libasan \
+          wayland-devel libxkbcommon-devel wayland-protocols-devel \
+          libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+    
+    # Cache CMake build directory for Fedora
+    - name: Setup CMake build cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/CMakeFiles
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/CMakeCache.txt
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/**/*.o
+        key: fedora-${{ matrix.build_type }}-${{ matrix.library_type }}-${{ hashFiles('CMakeLists.txt', 'src/**', 'include/**') }}
+        restore-keys: |
+          fedora-${{ matrix.build_type }}-${{ matrix.library_type }}-
+          fedora-${{ matrix.build_type }}-
+        
+    - name: Configure CMake
+      run: |
+        if [ "${{ matrix.library_type }}" = "shared" ]; then
+          SHARED_FLAG="-DCCAP_BUILD_SHARED=ON"
+          echo "Configuring Fedora build ${{ matrix.build_type }} - SHARED LIBRARY"
+        else
+          SHARED_FLAG=""
+          echo "Configuring Fedora build ${{ matrix.build_type }} - STATIC LIBRARY"
+        fi
+        cmake -B build/${{ matrix.build_type }}-${{ matrix.library_type }} \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCCAP_BUILD_EXAMPLES=ON \
+              -DCCAP_BUILD_TESTS=ON \
+              -DCCAP_BUILD_CLI=ON \
+              $SHARED_FLAG
+    
+    - name: Build
+      run: cmake --build build/${{ matrix.build_type }}-${{ matrix.library_type }} --config ${{ matrix.build_type }} --parallel $(nproc)
+    
+    - name: Verify library type
+      working-directory: build/${{ matrix.build_type }}-${{ matrix.library_type }}
+      run: |
+        # Verify library type
+        if [ "${{ matrix.library_type }}" = "shared" ]; then
+          if [ -f "libccap.so" ]; then
+            echo "✓ Fedora shared library libccap.so successfully built"
+          else
+            echo "✗ Fedora shared library not found"
+            exit 1
+          fi
+        else
+          if [ -f "libccap.a" ]; then
+            echo "✓ Fedora static library libccap.a successfully built"
+          else
+            echo "✗ Fedora static library not found"
+            exit 1
+          fi
+        fi
+    
+    - name: Run Unit Tests
+      if: matrix.build_type == 'Release'
+      run: |
+        # Create symbolic links to make test script work with new build directory structure
+        mkdir -p build
+        if [ ! -L "build/${{ matrix.build_type }}" ]; then
+          ln -sf "${{ matrix.build_type }}-${{ matrix.library_type }}" "build/${{ matrix.build_type }}"
+        fi
+        
+        cd scripts
+        # Set library type specific environment if needed
+        if [ "${{ matrix.library_type }}" = "shared" ]; then
+          export LD_LIBRARY_PATH="$PWD/../build/${{ matrix.build_type }}-${{ matrix.library_type }}:$LD_LIBRARY_PATH"
+        fi
+        # Run tests with AddressSanitizer enabled by default
+        # This helps catch memory errors early in CI
+        ./run_tests.sh --functional --exit-when-failed
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ccap-fedora-${{ matrix.build_type }}-${{ matrix.library_type }}
+        path: |
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/libccap.*
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/0-print_camera
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/1-minimal_example
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/2-capture_grab
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/3-capture_callback
+          build/${{ matrix.build_type }}-${{ matrix.library_type }}/*_results.xml
+        if-no-files-found: warn
