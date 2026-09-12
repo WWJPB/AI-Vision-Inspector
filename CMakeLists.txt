@@ -3,9 +3,14 @@ set(App Application)
 project(${App})
 
 set(Dep Dependecies)
+set(Cpp Cpp)
 
-add_executable(${App} C++/main.cpp
-		${Dep}/glad/src/glad.c  
+file(GLOB_RECURSE SOURCEFILES "${Cpp}/src/*.cpp")
+
+add_executable( ${App} Cpp/main.cpp
+		${SOURCEFILES}
+		${Dep}/glad/src/glad.c 
+
 )
 add_subdirectory(${Dep}/CameraCapture)
 add_subdirectory(${Dep}/glfw)
@@ -16,17 +21,23 @@ target_include_directories(${App} PRIVATE ${Dep}/glad/include
 				${Dep}/CameraCapture/include
 				${Dep}/imgui
 				${Dep}/StbImage
+				${Cpp}/Debug/include
+				${Cpp}/include
 				)
 target_link_libraries(${App} PRIVATE  
-	glfw
-	imgui
-	ccap
+
 	)
 if(UNIX)
 target_link_libraries(${App} PRIVATE
-	GL
+	glfw 
+	GL 
+	X11 
+	pthread 
+	Xrandr 
+	Xi 
 	dl
-	pthread
+	imgui
+	ccap
 )
 endif()
 				
