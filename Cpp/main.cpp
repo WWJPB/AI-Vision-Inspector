@@ -16,30 +16,17 @@ int main()
     window.InitGlfwContext();
 
     GLFWwindow* windowpointer = window.InitWindow(1000,1000,1,"Application");
-
+    window.InitOpenGlContext(windowpointer);
     
 
 
-    glfwSwapInterval(1);
-    if(windowpointer ==nullptr)
-    {
-        std::cout<<"Window Not Initialize \n";
-        return 0;
-    }
-        glfwMakeContextCurrent(windowpointer );
-        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-            {
-             std::cout << "Failed to initialize GLAD" << std::endl;
-             return -1;
-            }
-
+   
 
 
       while(!glfwWindowShouldClose(windowpointer ) )
       {
 
         glClearColor(0.0f,0.0f,0.0f,1.0f);
-
         glClear(GL_COLOR_BUFFER_BIT);
 
           

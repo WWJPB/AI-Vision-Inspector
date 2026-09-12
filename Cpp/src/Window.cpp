@@ -46,8 +46,9 @@ GLFWwindow  * Window::InitWindow(int width,int height,int posx,int posy,int swap
         return windowpointer;
 
     }
-void Window::InitOpenGlContext()
+void Window::InitOpenGlContext(GLFWwindow * window)
     {
+        glfwMakeContextCurrent(window);
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
          std::cout << "Failed to initialize GLAD \n";
@@ -55,6 +56,10 @@ void Window::InitOpenGlContext()
          glfwTerminate();
          exit(-1);
         }
+    }
+void EventsForWindow(GLFWwindow *& window)
+    {
+
     }
 
   

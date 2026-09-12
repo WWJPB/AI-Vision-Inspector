@@ -3,7 +3,7 @@
 
 
 #include <Interface.h>
-void Interface::Init()
+void Interface::Init(GLFWwindow  * window))
 {
     
 }

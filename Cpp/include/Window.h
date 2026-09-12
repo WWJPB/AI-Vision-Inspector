@@ -16,7 +16,8 @@ class Window
     void InitGlfwContext();
     GLFWwindow * InitWindow(int width,int height,int swapinterval,std::string title);
     GLFWwindow * InitWindow(int width,int height,int posx,int posy,int swapinterval,std::string title);
-    void InitOpenGlContext();
+    void InitOpenGlContext(GLFWwindow * window);
+    void EventsForWindow(GLFWwindow *& window);
 
    
     
