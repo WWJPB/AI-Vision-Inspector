@@ -1,0 +1,12 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/vboxuser/AI-Vision-Inspector/build/cmake_install.cmake",
+		"/home/vboxuser/AI-Vision-Inspector/build/Dependecies/CameraCapture/cmake_install.cmake",
+		"/home/vboxuser/AI-Vision-Inspector/build/Dependecies/glfw/cmake_install.cmake",
+		"/home/vboxuser/AI-Vision-Inspector/build/Dependecies/glfw/src/cmake_install.cmake",
+		"/home/vboxuser/AI-Vision-Inspector/build/Dependecies/glfw/docs/cmake_install.cmake",
+		"/home/vboxuser/AI-Vision-Inspector/build/Dependecies/imgui/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -6,6 +6,7 @@ set(Dep Dependecies)
 set(Cpp Cpp)
 
 file(GLOB_RECURSE SOURCEFILES "${Cpp}/src/*.cpp")
+message(STATUS "Source Files added to executable : ${SOURCEFILES}")
 
 add_executable( ${App} Cpp/main.cpp
 		${SOURCEFILES}

@@ -1,17 +1,18 @@
-#define INTERFACE_H
-#ifndef INTERFACE_H
+//#define INTERFACE_H
+//#ifndef INTERFACE_H
 
 
-#include <glad/glad.c>
-#include <GLFW/glfw.h>
 
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
+
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+#include <iostream>
 
 
 class Interface
 {
+    public:
     void Init( GLFWwindow  * window);
     void Render();
     void ShutDown();
@@ -21,4 +22,4 @@ class Interface
 
 
 };
-#endif
+//#endif
